@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en-us"
+  dir="ltr">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+<link rel="icon" type="image/ico" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="http://localhost:1313/android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="http://localhost:1313/apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+
+
+<title>
+    
+    Notes of “A Mathematical Framework for Transformer Circuits” | Jimmy Kang
+    
+</title>
+
+<link rel="canonical" href="http://localhost:1313/posts/framework_2025-08-10/framework_2025-08-10/"/>
+
+<meta property="og:url" content="http://localhost:1313/posts/framework_2025-08-10/framework_2025-08-10/">
+  <meta property="og:site_name" content="Jimmy Kang">
+  <meta property="og:title" content="Notes of “A Mathematical Framework for Transformer Circuits”">
+  <meta property="og:description" content="These is my condensation of A Mathematical Framework for Transformer Circuits , mainly written just to help my understanding. Note: This is the first mechanistic interpretability paper I’ve read, with not much direct context otherwise. It’s also relatively “old” compared to newer papers, so there may be new advancements or contradictions I am not aware of.
+This paper looks at primitive ways to understand what Transformers do. To accomplish this, the authors drastically simplify the architecture of standard “production” transformers and reformulate many of its mechanisms. Through this reformulation, they reveal interesting mechanisms within their simplified model and discuss how these might extend.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2025-08-10T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-08-10T00:00:00+00:00">
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.92c3bf7119b98cfdc79e93f36a451eb901d8bbbfed7d75814e6436cf6c9085dc.css" media="all">
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+</head>
+
+
+
+
+
+
+
+<body class="auto">
+
+  <div class="content">
+    <header>
+      
+
+<div class="header">
+
+    
+
+    <h1 class="header-title">
+        <a href="http://localhost:1313/">Jimmy Kang</a>
+    </h1>
+
+    <div class="header-menu">
+        
+
+        
+        
+
+        <p
+            class="small ">
+            <a href="/posts" >
+                /posts
+            </a>
+        </p>
+        
+
+        <p
+            class="small ">
+            <a href="/about" >
+                /about
+            </a>
+        </p>
+        
+        
+    </div>
+
+    
+
+</div>
+
+    </header>
+
+    <main class="main">
+      
+
+
+
+
+
+
+
+<div >
+  <article>
+    <header class="single-intro-container">
+        
+        <h1 class="single-title">Notes of “A Mathematical Framework for Transformer Circuits”</h1>
+        
+        <div class="single-subsummary">
+          
+          <div>
+            
+            <p class="single-date">
+              <time datetime="2025-08-10T00:00:00&#43;00:00">August 10, 2025</time>
+            </p>
+          </div>
+        </div>
+        
+    </header>
+    
+    <div class="single-content">
+      <p>These is my condensation of <a href="https://transformer-circuits.pub/2021/framework/index.html">A Mathematical Framework for Transformer Circuits
+</a>, mainly written just to help my understanding. Note: This is the first mechanistic interpretability paper I’ve read, with not much direct context otherwise. It’s also relatively “old” compared to newer papers, so there may be new advancements or contradictions I am not aware of.</p>
+<p>This paper looks at primitive ways to understand what Transformers do. To accomplish this, the authors drastically simplify the architecture of standard “production” transformers and reformulate many of its mechanisms. Through this reformulation, they reveal interesting mechanisms within their simplified model and discuss how these might extend.</p>
+<h2 class="heading" id="architecture-reformulation">
+  Architecture Reformulation
+  <a class="anchor" href="#architecture-reformulation">#</a>
+</h2>
+<p>In a standard transformer, the one-hot encodings of tokens are embedded, passed through a series of residual blocks, then unembedded and softmaxed into logit probabilities. The residual blocks always maintain the residual stream and alternate attention and MLP layers. An important intuitive understanding is that the attention/MLP layers simply “read” and “write” from the residual stream. The reads and writes go through a linear projection.</p>
+<p>Because the attention heads generally operate in much smaller dimensions than the residual stream, different heads can read/write from relatively independent subspaces without affecting each other. For example OpenAI’s new <a href="https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf">OSS models</a> have a residual dimension of 2880 and individual head dimensions of 64.</p>
+<p>It&rsquo;s reasonable to think about the bandwidth of the residual stream.
+The number of hypothetically communicating components drastically outnumber the residual dimension, which means it may actually be very bandwidth-constrained.
+The authors note that they see evidence of some attention heads/MLP neurons perform types of memory management, principally deletion.</p>
+<p>The residual stream is important and core to how many people, including this paper&rsquo;s authors, think about transformers.
+It’s worth nothing that multi-head attention is mathematically equivalent to running the individual attention heads independently, with their own output projections $W_O^{h_i}$, and adding the results back into the linear stream. That’s all the $W^O$ in the original <a href="https://arxiv.org/pdf/1706.03762">Transformers paper</a> does.</p>
+<h3 class="heading" id="tensor-product">
+  Tensor Product
+  <a class="anchor" href="#tensor-product">#</a>
+</h3>
+<p>The authors use tensor product notation throughout the paper. I don’t think it’s <em>terribly</em> important to understand. A nice equivalent interpretation of the tensor product $(A \otimes B)$ is that it applies left and right multiplications to a matrix: $(A \otimes B)x = AxB^T$. Additionally, $(A_1 \otimes B_1 + A_2 \otimes B_2)x = A_1xB_1^T + A_2xB_2^T$ .</p>
+<h3 class="heading" id="attention">
+  Attention
+  <a class="anchor" href="#attention">#</a>
+</h3>
+<p>We can express an attention head as $h(x) = (A \otimes W_OW_V) \cdot x$, where $A = \text{softmax}(x^TW_Q^TW_Kx)$.</p>
+<p>Note: $W_OW_V$ and $W_Q^TW_K$ would produce a giant low-rank matrix, so we would never do this in production.</p>
+<p>The only nonlinear component is the construction of $A$. Besides that, other operations become linear and we can interpret the different components. Specifically, $A$ operates across positions and decides which tokens’ information goes where. $W_{OV} \coloneqq W_OW_V$ decides how the destination token is affected.</p>
+<h2 class="heading" id="012-layer-transformers">
+  0/1/2 Layer Transformers
+  <a class="anchor" href="#012-layer-transformers">#</a>
+</h2>
+<p>The paper does not include MLP layers in their analysis, choosing to focus on attention layers instead.</p>
+<h3 class="heading" id="0-layer-transformer">
+  0-Layer Transformer
+  <a class="anchor" href="#0-layer-transformer">#</a>
+</h3>
+<p>If we don’t have any layers, we just embed the token then unembed: $T = W_UW_E$. Optimally, this would approximate the bigram log-likelihoods.</p>
+<h3 class="heading" id="1-layer-transformer">
+  1-Layer Transformer
+  <a class="anchor" href="#1-layer-transformer">#</a>
+</h3>
+<p>$$
+T = Id \otimes W_UW_E~+~\sum_{h \in H}{A^h \otimes (W_UW_{OV}^hW_E)}
+$$</p>
+<p>$$
+A^h = \text{softmax}\left( t^T \cdot W_E^TW_{QK}^hW_E \cdot t\right)
+$$</p>
+<p>$t$ is the one-hot encoding vector.</p>
+<p>Here, the separation between “which token” and “what information” that I alluded to above is expanded on here. Specifically, we can expand the attention operations into the QK circuit( $W_E^TW_{QK}^hW_E$) and the OV circuit( $W_UW_{OV}^hW_E$). These are relatively separate, and as an example if we freeze the QK circuit, the logits become linear w.r.t the tokens, which is very neat.</p>
+<p>I try to shy away from using source graphics but this just captures the intuition so clearly.</p>
+<p>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div class="img-container" >
+        <img loading="lazy" alt="My Diagram" src="qk_ov.png" >
+    </div>
+
+    
+</figure>
+</p>
+<h3 class="heading" id="skip-trigram-interpretation-of-the-1-layer-transformer">
+  Skip Trigram Interpretation of the 1-Layer Transformer
+  <a class="anchor" href="#skip-trigram-interpretation-of-the-1-layer-transformer">#</a>
+</h3>
+<p>The 1 layer transformer can be likened to a skip trigram model. The QK circuit decides which source destination token to pay attention to, and the OV circuit decides how it will affect our logits. The tokens involved are <code>[source]... [destination][out]</code>.</p>
+<p>With their trained 1-layer model, the authors note several behaviors. The first is the act of copying. A lot of heads set up their OV circuits such that they increase the logits of whatever token is attended to. There are more subtle copying examples such as dealing with the quirks of tokenization. Another interesting behavior is positional heads, which seem to only attend to tokens on a relative basis. They show an example of a head that attends to either the present or the previous token.</p>
+<p>There are also some interesting undesirable behaviors. For example, the skip trigram representation is inflexible with three-way interactions. If the model increases the probabilities of both <code>keep... in mind</code> and <code>keep... at bay</code>, it also increases <code>keep... in bay</code> and <code>keep... at mind</code>. This is because once <code>in</code> and <code>at</code> decides to pay attention to <code>keep</code> , <code>keep</code> increases the probability of both <code>mind</code> and <code>bay</code>, no matter which destination token decided to pay attention to it.</p>
+<p><a href="https://www.alignmentforum.org/posts/b5HNYh9ne5vEkX5ag/one-layer-transformers-aren-t-equivalent-to-a-set-of-skip">This</a> post refutes the skip-trigram interpretation of 1-layer transformers. This is easily understood by realizing that softmax is a nonlinear operation where tokens compete, i.e. attending more to one token necessarily means attending less to another token. They make deeper claims about interpretability with or without reference to the underlying data distribution. I recommend at least a skim.</p>
+<h3 class="heading" id="2-layer-transformer">
+  2-Layer Transformer
+  <a class="anchor" href="#2-layer-transformer">#</a>
+</h3>
+<p>Attention head composition is the important thing with 2-layer transformers. Without composition, we just have a 1-layer transformer. Recall that attention heads read/write from the residual stream, very often to different subapces. In the 2-layer case, we can classify composition into three types:</p>
+<ul>
+<li>K-Composition: $W_K$ reading a subspace affected by a previous head</li>
+<li>Q-Composition: $W_Q$ reading a subspace affected by a previous head</li>
+<li>V-Composition: $W_V$ reading a subspace affected by a previous head</li>
+</ul>
+<p>The authors point out that K and Q composition simply change what we pay attention to(moving data + moving data = moving data). V-composition seems more interesting because it changes <em>how</em> we read in the information.</p>
+<p>Going back to tensor notation, the two-layer transformer looks like this.</p>
+<p>$$
+T = Id \otimes W_UW_E + \sum_{h \in H_1 \cup H_2}{A^h \otimes (W_UW_{OV}^hW_E)} + \sum_{h_2 \in H_2}{\sum_{h_1 \in H_1}{(A^{h_2}A^{h_1}) \otimes (W_UW_{OV}^{h_2}W_{OV}^{h_1}W_E)}}
+$$</p>
+<p>The first term are the bigram statistics we saw in the 0-layer case. The second term are the individual attention heads. The third term represents V-composition, or “virtual attention heads.” We will come back to this later.</p>
+<p>The Q and K composition are reflected in the $A^h$ of the second layers($h \in H_2$). We could actually expand the $C_{QK}^{h \in H_2}$ of $A^h = \text{softmax}(t^T \cdot C_{QK}^h \cdot t)$, but the tensor products blow up and are not very insightful.</p>
+<h3 class="heading" id="composition">
+  Composition
+  <a class="anchor" href="#composition">#</a>
+</h3>
+<p>The authors measure the strength of composition by taking the Frobenius norms of various matrices. I recommend reading the source material directly if you’re curious about the details. Intuitively speaking this number is higher when the directions that the various matrices from the first head “write” in align with the direction that the second head “reads” from.</p>
+<p>Although most attention heads are actually not involved in composition, the few that do exhibit K-composition. They note that these few heads that do compose seems to be primarily for the purpose of induction.</p>
+<h3 class="heading" id="induction">
+  Induction
+  <a class="anchor" href="#induction">#</a>
+</h3>
+<p>When we look at the K-composition heads and look at their attention patterns, we see that they attend primarily to tokens that will come next. In other words, they find patterns of the structure <code>[a][b] ... [a] -&gt; [b]</code>. Recall the 1-layer pattern is <code>[b]... [a] -&gt; [b]</code>. The pattern of the composition seems to be much more powerful. The paper provides further evidence by highlighting the attention patterns of totally random tokens, showing that the model captures this general pattern without relying priors from the training data.</p>
+<p>One example method of producing induction heads is to have the previous token head shift the key vector forward one position, with the OV circuit just being a “copying” matrix. In this configuration, the attention score will increase when the previous token before the source position is the same as the destination token. The paper shows that the eigenvalues of QK and OV matrices are extremely positive, supporting this hypothesis.</p>
+<h2 class="heading" id="virtual-attention-heads">
+  Virtual Attention Heads
+  <a class="anchor" href="#virtual-attention-heads">#</a>
+</h2>
+<p>Now we come back to virtual attention heads, or V-composition. The terms within the tensor expansion of the transformer of virtual attention heads are $(A^{h_2}A^{h_1}) \otimes (&hellip;W_{OV}^{h_2}W_{OV}^{h_1}&hellip;)$. I think it’s useful to think of these as really independent attention heads.</p>
+<p>Although virtual attention heads don’t have a large impact in ablation studies, the paper proposes that they may play a more important in deeper networks for two reasons. Firstly, it seems that virtual attention heads can attend to much more abstract concepts, such as “the subject of the last sentence” or even “the topic of the last paragraph.” Secondly, the number of attention heads blows up. Composition of 2 heads grows quadratically with the number of layers, 3 heads cubically, etc.</p>
+<h2 class="heading" id="ablation">
+  Ablation
+  <a class="anchor" href="#ablation">#</a>
+</h2>
+<p>Generally when studying composition, you’re studying $n^{th}$ order terms. The paper proposes an algorithm to isolation these higher order terms. This is the example for V-Composition(which is the principal higher-order ). The authors state that Q/K composition can also be ablated with a similar, but more involved algorithm.</p>
+<ul>
+<li>Step 0: Run model regularly, saving all attention patterns.</li>
+<li>Step 1: Run model, force attention patterns to be what we saved them as, and instead of adding attention head results to the residual stream, add a tensor of zeros.</li>
+<li>Step $n$: Run model, force attention patterns to be what we saved them as, and instead of adding attention head results to the residual stream, just save them and add what we saved in the previous step.</li>
+</ul>
+<p>Comparing ablation losses is how the authors show that virtual attention heads do not play a large role for our 1/2 layer examples.</p>
+
+    </div>
+  </article>
+
+  
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flexnowrap">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/posts/gpt/">
+                        Character Level GPT
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+    </main>
+  </div>
+
+  
+  
+
+
+
+
+
+    
+
+
+
+
+  <footer>
+    
+
+    
+    
+
+
+
+
+
+    
+
+
+
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+  </footer>
+
+  
+  <link rel="stylesheet" 
+  href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+  
+<script defer 
+  src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
+
+<script defer
+  src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body);"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false }
+      ]
+    });
+  });
+</script>
+  
+</body>
+
+<script src="/js/theme-switch.js"></script>
+<script defer src="/js/copy-code.js"></script>
+</html>

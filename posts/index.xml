@@ -6,8 +6,22 @@
     <description>Recent content in Posts on Jimmy Kang</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 27 Jul 2025 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 10 Aug 2025 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://jjimmykang.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Notes of “A Mathematical Framework for Transformer Circuits”</title>
+      <link>https://jjimmykang.github.io/posts/framework_2025-08-10/</link>
+      <pubDate>Sun, 10 Aug 2025 00:00:00 +0000</pubDate>
+      <guid>https://jjimmykang.github.io/posts/framework_2025-08-10/</guid>
+      <description>&lt;p&gt;These are my notes on &lt;a href=&#34;https://transformer-circuits.pub/2021/framework/index.html&#34;&gt;A Mathematical Framework for Transformer Circuits&#xA;&lt;/a&gt;, mainly written just to help my understanding. Note: This is the first mechanistic interpretability paper I’ve read, with not much direct context otherwise. It’s also relatively “old” compared to newer papers, so there may be new advancements or contradictions I am not aware of.&lt;/p&gt;&#xA;&lt;p&gt;This paper looks at primitive ways to understand what Transformers do. To accomplish this, the authors drastically simplify the architecture of standard “production” transformers and reformulate many of its mechanisms. Through this reformulation, they reveal interesting mechanisms within their simplified model and discuss how these might extend.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Character Level GPT</title>
+      <link>https://jjimmykang.github.io/posts/gpt/</link>
+      <pubDate>Mon, 28 Jul 2025 00:00:00 +0000</pubDate>
+      <guid>https://jjimmykang.github.io/posts/gpt/</guid>
+      <description>&lt;h2 class=&#34;heading&#34; id=&#34;overview&#34;&gt;&#xA;  Overview&#xA;  &lt;a class=&#34;anchor&#34; href=&#34;#overview&#34;&gt;#&lt;/a&gt;&#xA;&lt;/h2&gt;&#xA;&lt;p&gt;I implemented a character-level transformer in PyTorch, trained on &lt;a href=&#34;https://mattmahoney.net/dc/textdata.html&#34;&gt;enwik9&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;p&gt;My main goals with this project were to:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Brush up on PyTorch.&lt;/li&gt;&#xA;&lt;li&gt;Make sure I could rederive important parts of Transformer math from scratch.&lt;/li&gt;&#xA;&lt;li&gt;Get into the groove of using my RTX 4090 with any future experiments that I might want to try.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;The code is in my &lt;a href=&#34;https://github.com/jjimmykang/ml/blob/master/gpt/Transformer.ipynb&#34;&gt;repo&lt;/a&gt;, as any future work will be.&#xA;There are many explanations of the transformer mechanism (&lt;a href=&#34;https://jalammar.github.io/illustrated-transformer/&#34;&gt;Illustrated Transformer&lt;/a&gt; is a good one),&#xA;so these are just my notes rather than anything comprehensive.&lt;/p&gt;</description>
+    </item>
     <item>
       <title>Test Post</title>
       <link>https://jjimmykang.github.io/posts/hello_world/</link>

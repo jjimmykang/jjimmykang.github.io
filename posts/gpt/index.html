@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en-us"
+  dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+<link rel="icon" type="image/ico" href="https://jjimmykang.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jjimmykang.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jjimmykang.github.io/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://jjimmykang.github.io/android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://jjimmykang.github.io/apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+
+
+<title>
+    
+    Character Level GPT | Jimmy Kang
+    
+</title>
+
+<link rel="canonical" href="https://jjimmykang.github.io/posts/gpt/"/>
+
+<meta property="og:url" content="https://jjimmykang.github.io/posts/gpt/">
+  <meta property="og:site_name" content="Jimmy Kang">
+  <meta property="og:title" content="Character Level GPT">
+  <meta property="og:description" content="Overview # I implemented a character-level transformer in PyTorch, trained on enwik9.
+My main goals with this project were to:
+Brush up on PyTorch. Make sure I could rederive important parts of Transformer math from scratch. Get into the groove of using my RTX 4090 with any future experiments that I might want to try. The code is in my repo, as any future work will be. There are many explanations of the transformer mechanism (Illustrated Transformer is a good one), so these are just my notes rather than anything comprehensive.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2025-07-28T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-07-28T00:00:00+00:00">
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.92c3bf7119b98cfdc79e93f36a451eb901d8bbbfed7d75814e6436cf6c9085dc.css" media="all">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+</head>
+
+
+
+
+
+
+
+<body class="auto">
+
+  <div class="content">
+    <header>
+      
+
+<div class="header">
+
+    
+
+    <h1 class="header-title">
+        <a href="https://jjimmykang.github.io/">Jimmy Kang</a>
+    </h1>
+
+    <div class="header-menu">
+        
+
+        
+        
+
+        <p
+            class="small ">
+            <a href="/posts" >
+                /posts
+            </a>
+        </p>
+        
+
+        <p
+            class="small ">
+            <a href="/about" >
+                /about
+            </a>
+        </p>
+        
+        
+    </div>
+
+    
+
+</div>
+
+    </header>
+
+    <main class="main">
+      
+
+
+
+
+
+
+
+<div >
+  <article>
+    <header class="single-intro-container">
+        
+        <h1 class="single-title">Character Level GPT</h1>
+        
+        <div class="single-subsummary">
+          
+          <div>
+            
+            <p class="single-date">
+              <time datetime="2025-07-28T00:00:00&#43;00:00">July 28, 2025</time>
+            </p>
+          </div>
+        </div>
+        
+    </header>
+    
+    <div class="single-content">
+      <h2 class="heading" id="overview">
+  Overview
+  <a class="anchor" href="#overview">#</a>
+</h2>
+<p>I implemented a character-level transformer in PyTorch, trained on <a href="https://mattmahoney.net/dc/textdata.html">enwik9</a>.</p>
+<p>My main goals with this project were to:</p>
+<ul>
+<li>Brush up on PyTorch.</li>
+<li>Make sure I could rederive important parts of Transformer math from scratch.</li>
+<li>Get into the groove of using my RTX 4090 with any future experiments that I might want to try.</li>
+</ul>
+<p>The code is in my <a href="https://github.com/jjimmykang/ml/blob/master/gpt/Transformer.ipynb">repo</a>, as any future work will be.
+There are many explanations of the transformer mechanism (<a href="https://jalammar.github.io/illustrated-transformer/">Illustrated Transformer</a> is a good one),
+so these are just my notes rather than anything comprehensive.</p>
+<h2 class="heading" id="final-results">
+  Final Results
+  <a class="anchor" href="#final-results">#</a>
+</h2>
+<p>After a half day of training, the model was trained on 7,372,800,000 characters.
+I got this number by just doing $\text{batch size} \cdot \text{ctx len} \cdot \text{train steps}$.
+Perhaps this is wrong if anyone wants to enlighten me.
+The model achieved a validation perplexity of 2.35.</p>
+<p>The results are interesting:</p>
+<blockquote>
+<p>Prompt: OpenAI is<br>
+Completion: OpenAI is built at a time under the shuffly falling this [[supervised aircraft]] and [[attack]]s, over which the weapons controls exercise, extend out to CPU&rsquo;s abmies and Fermi-mantinei missariens at Rotary Pl</p></blockquote>
+<blockquote>
+<p>Prompt: Traditional film school<br>
+Completion: Traditional film school adaptations to the British to broad dinners and rituals, and an infix &lsquo;ge:gez.php.&rsquo;. Reasonably, the high priest mother has such a personality, it is not fit in favor of his factory, such as Gabriel</p></blockquote>
+<p>It&rsquo;s mostly nonsensical, but there is readable grammar and even some topic consistency.
+The model maintained coherence with words like aircraft, attack, weapons, and CPU for example.</p>
+<h2 class="heading" id="interestingnon-obvious-things">
+  Interesting/Non-Obvious Things
+  <a class="anchor" href="#interestingnon-obvious-things">#</a>
+</h2>
+<h3 class="heading" id="the-softmax-formula-in-attention">
+  The Softmax Formula In Attention
+  <a class="anchor" href="#the-softmax-formula-in-attention">#</a>
+</h3>
+<p>$$ \text{Softmax}\left(\frac{1}{\sqrt{d_k}} Q K^T\right) $$
+Something that wasn&rsquo;t immediately obvious to me at first was why we divide the dot product by $\sqrt{d_k}$ in self attention.
+Like a lot of things, it&rsquo;s to improve stability of training and keep gradients from vanishing or exploding.</p>
+<p>As a narrow example, assume that $q$ and $k$ are i.i.d. with mean $0$ and variance $\sigma^2$.
+Then, $\text{Var}(q^T k) = \sum_{i=1}^{d_k} \sigma^2 \cdot \sigma^2 = d_k \sigma^4 \rightarrow \text{Std}(q^T k) = \sqrt{d_k} \sigma^2$.
+The division gets rid of the $\sqrt{d_k}$ term so that our variance is constant regardless of our key dimension.
+From what I understand this intuition extends to actual $q$ and $k$ vectors, keeping them well conditioned.</p>
+<h3 class="heading" id="multi-head-attention">
+  Multi-Head Attention
+  <a class="anchor" href="#multi-head-attention">#</a>
+</h3>
+<p>A limitation of the basic single-head attention mechanism is that it forces every token interaction to pass through one shared metric of similarity.
+The word &ldquo;book&rdquo; may mean different things depending on the context, such as &ldquo;booking a flight&rdquo;, &ldquo;reading a book&rdquo;, or &ldquo;booking it out of here.&rdquo;
+Even though it may be possible for us to learn these different meanings with a wide enough key dimension and/or increasing of other parameters,
+multi-head attention allows us to factorize the problem so that the treatments are disentangled.
+And also every paper I could find since 2017 used MHA.</p>
+<p>Concretely, consider the following sentence:</p>
+<blockquote>
+<p>Yesterday, League of Legends professional Faker <em>played</em> &hellip;</p></blockquote>
+<p>Suppose our model must guess the word &ldquo;played.&rdquo;
+It must listen to the token(s) &ldquo;League of Legends&rdquo; to deduce that Faker will play a video game.
+But it must also definitely pay attention to &ldquo;Yesterday&rdquo; to decide the tense of the verb.
+These are different attention patterns which we hope to capture with multiple heads.</p>
+<p>Although I&rsquo;m not sure how much this matters, because we concatenate the output of the different heads,
+the output vector of the MHA block is also semantically partitioned.</p>
+<h3 class="heading" id="position-encodings">
+  Position Encodings
+  <a class="anchor" href="#position-encodings">#</a>
+</h3>
+<p>Attention is a set operation.
+If we don&rsquo;t encode position, the network would not know the order of the words.
+For my implementation I just added <code>self.pos_emb = nn.Parameter(torch.randn(ctx_len, d_model))</code> and this worked fine.
+In practice people use sinusoidal or rotary embeddings but I didn&rsquo;t do that for this tiny model.</p>
+<h3 class="heading" id="the-maskfalse-incident">
+  The mask=False incident
+  <a class="anchor" href="#the-maskfalse-incident">#</a>
+</h3>
+<p>The first time I tried to train the network, I set up the notebook and left for the day.
+I came back 14 hours later to find that I had trained without the self-attention mask, leading to nonsensical generations.</p>
+<p>Even for this small exercise, there was a big change in pace from my regular work.
+Normally data and program behavior are <em>interpretable</em> for me.
+Working in a traditional regression setting allows me to iterate on relatively trivial errors very quickly.
+Fitting takes way less time than deep learning jobs and bugs are easy to catch early on.
+The feedback loop is just much longer even for a small project like this, on the order of hours rather than seconds and I can only imagine that it is worse for production workloads.</p>
+
+    </div>
+  </article>
+
+  
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flexnowrap">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/posts/hello_world/">
+                        Test Post
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/posts/framework_2025-08-10/">
+                        Notes of “A Mathematical Framework for Transformer Circuits”
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+    </main>
+  </div>
+
+  
+  
+
+
+
+
+
+    
+
+
+
+
+  <footer>
+    
+
+    
+    
+
+
+
+
+
+    
+
+
+
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+  </footer>
+
+  
+  <link rel="stylesheet" 
+  href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+  
+<script defer 
+  src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
+
+<script defer
+  src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body);"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false }
+      ]
+    });
+  });
+</script>
+  
+</body>
+
+<script src="/js/theme-switch.js"></script>
+<script defer src="/js/copy-code.js"></script>
+</html>
